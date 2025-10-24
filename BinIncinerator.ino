@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <Firebase_ESP_Client.h>
+#include <ESP8266mDNS.h>
 
 // ======== CONFIGURATION ========
 const char* ssid = "ZTE_2.4G_QpEdq4";
@@ -99,8 +100,18 @@ void setup() {
   Firebase.begin(&config, &auth);  // initialize after all setup
 
   Serial.println("🔥 Firebase initialized");
+
+  // Start mDNS responder with device name "esp8266-device"
+  if (MDNS.begin("esp8266-device")) {
+    Serial.println("mDNS responder started");
+    Serial.println("You can now connect to:");
+    Serial.println("http://esp8266-device.local/");
+  } else {
+    Serial.println("Error starting mDNS");
+  }
 }
 
 void loop() {
   server.handleClient();
+   MDNS.update(); // Required to keep mDNS running
 }
