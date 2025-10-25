@@ -1,8 +1,8 @@
 # 🔥 Smart Hybrid Eco Incineration Bin
 
 ## ♻️ Overview
-The **Smart Hybrid Eco Incineration Bin** is a household-scale prototype designed to **burn waste efficiently**, **purify emitted smoke**, and **integrate AI for optimized control** — all managed through a **mobile application**.  
-This project demonstrates the potential for an **eco-friendly, AI-powered waste management system** that is **safe**, **compact**, and **budget-friendly**.
+The **Smart Hybrid Eco Incineration Bin** is a household-scale prototype designed to **burn waste efficiently**, **purify emitted smoke**, and **integrate microcontrollers for optimized control** — all managed through a **mobile application** made using Flutter.  
+This project demonstrates the potential for an **eco-friendly, NodeMCU-powered waste management system** that is **safe**, **compact**, and **budget-friendly**.
 
 ---
 
@@ -10,7 +10,7 @@ This project demonstrates the potential for an **eco-friendly, AI-powered waste 
 To build a **household incineration bin** that:
 - Burns household waste efficiently.
 - Purifies smoke before it is released.
-- Uses AI for automated safety and optimization.
+- Uses microcontroller for automated safety and optimization.
 - Is controlled remotely through a **mobile app**.
 
 ---
@@ -29,8 +29,8 @@ Two-stage filtering system:
 - Includes a **small exhaust fan** to release purified air.
 
 ### 🔸 3. AI Integration
-- Runs on **Raspberry Pi Zero W** or **Arduino with AI module**.  
-- AI features include:
+- Runs on **ESP8266 DEV**.  
+- Features include:
   - Automatic heat level adjustment.
   - Smoke quality monitoring.
 
@@ -59,7 +59,7 @@ The mobile dashboard allows users to:
 | **Burner** | Electric coil or LPG burner (relay-controlled) |
 | **Filters** | HEPA + Activated Carbon |
 | **Sensors** | Thermocouple (temperature), Gas/smoke sensor |
-| **Controller** | Raspberry Pi Zero W / Arduino Nano + Wi-Fi |
+| **Controller** | ESP8266 Dev + Wi-Fi |
 | **Mobile App** | Minimal UI: Temperature, Status, Timer, Start/Stop |
 
 ---
@@ -86,14 +86,13 @@ The mobile dashboard allows users to:
 ## 🧩 Result
 A **safe**, **affordable**, and **eco-conscious** prototype that demonstrates:
 - 🔹 Efficient waste incineration  
-- 🔹 Real-time AI monitoring  
+- 🔹 Real-time monitoring  
 - 🔹 Smoke purification  
 - 🔹 Mobile app integration  
 
 ---
 
 ## 📱 Future Enhancements
-- Advanced AI for predictive burn optimization.  
 - Multi-stage smoke purification system.  
 - Solar-powered heating option.  
 - Cloud data logging for performance tracking.
@@ -102,7 +101,7 @@ A **safe**, **affordable**, and **eco-conscious** prototype that demonstrates:
 
 ## 🧠 Developed For
 Educational and research purposes to showcase:
-> “How AI and IoT can merge to create a smart, eco-friendly waste management solution.”
+> “How IoT can merge to create a smart, eco-friendly waste management solution.”
 
 ---
 
@@ -117,4 +116,3 @@ This project is open for **educational and non-commercial** use under the [MIT L
 ---
 
 **Author:** *Steven Jake Fajarillo*  
-📍 *Smart Hybrid Eco Incineration Bin – Prototype Research Project*
