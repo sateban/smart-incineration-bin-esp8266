@@ -3,6 +3,7 @@
 #include <Firebase_ESP_Client.h>
 #include <ESP8266mDNS.h>
 #include "secrets.h"
+#include "max6675.h"
 
 // Provide token process info
 #include "addons/TokenHelper.h"
@@ -17,6 +18,20 @@ FirebaseConfig config;
 
 // ======== LED PIN ========
 const int LED_PIN = LED_BUILTIN;  // D4 on NodeMCU
+
+// Thermocouple
+int thermoSO = D6;   // SO pin
+int thermoCS = D5;   // CS pin
+int thermoSCK = D7;  // SCK pin
+double celsius;
+double fahrenheit;
+
+// Gas Sensor
+const int mq2Pin = D0;  // Analog pin connected to MQ-2
+int gasLevel = 0;       // To store the sensor value
+int threshold = 400;    // Adjust this value based on your environment
+
+MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
 // ======== HANDLERS ========
 void handleRoot() {
@@ -53,6 +68,33 @@ void handleLedControl() {
   }
 }
 
+void handleInformation() {
+  if (server.method() == HTTP_POST) {
+    String body = server.arg("plain");
+    body.trim();
+    double temperature = celsius;
+
+    server.send(
+      200,
+      "text/plain",
+      "temperature:" + String(isnan(temperature) ? 0 : temperature) + ";smoke:" + String(gasValue));
+
+    // if (Firebase.ready()) {
+    //   if (Firebase.RTDB.setString(&fbdo, "/test/message", "Hello from ESP8266 (secure)!")) {
+    //     Serial.println("✅ Data written successfully!");
+    //   } else {
+    //     Serial.println("❌ Write failed: " + fbdo.errorReason());
+    //   }
+    // } else {
+    //   Serial.println("⚠️ Firebase not ready yet.");
+    // }
+
+  } else {
+    server.send(405, "text/plain", "Use POST method only.");
+  }
+}
+
+
 void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
@@ -66,6 +108,7 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
+    yield();
   }
   Serial.println("\n✅ WiFi connected!");
   Serial.print("IP Address: ");
@@ -74,6 +117,7 @@ void setup() {
   // ====== Server Routes ======
   server.on("/", handleRoot);
   server.on("/led", handleLedControl);
+  server.on("/info", handleInformation);
   server.begin();
   Serial.println("🌐 HTTP server started");
 
@@ -100,9 +144,24 @@ void setup() {
   } else {
     Serial.println("Error starting mDNS");
   }
+
+  // Smoke sensor
+  pinMode(mq2Pin, INPUT);  // MQ-2 analog input
+  Serial.println("MQ-2 Gas Sensor is warming up...");
+  delay(2000);  // Warm-up time for sensor
 }
 
 void loop() {
   server.handleClient();
-   MDNS.update(); // Required to keep mDNS running
+  MDNS.update();  // Required to keep mDNS running
+
+  // Read temperature in Celsius
+  celsius = thermocouple.readCelsius();
+  // Read temperature in Fahrenheit
+  fahrenheit = thermocouple.readFahrenheit();
+
+  // Read Gas Value
+  gasLevel = analogRead(mq2Pin);  // Read analog value
+  delay(1000);
+  yield();
 }
