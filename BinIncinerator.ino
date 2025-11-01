@@ -161,7 +161,7 @@ void loop() {
   fahrenheit = thermocouple.readFahrenheit();
 
   // Read Gas Value
-  gasLevel = analogRead(mq2Pin);  // Read analog value
+  gasLevel = analogRead(mq2Pin);
   delay(1000);
   yield();
 }
