@@ -31,6 +31,9 @@ const int mq2Pin = D0;  // Analog pin connected to MQ-2
 int gasLevel = 0;       // To store the sensor value
 int threshold = 400;    // Adjust this value based on your environment
 
+// Relay for Fan
+const int relayFanPin = D1;
+
 MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
 // ======== HANDLERS ========
@@ -60,8 +63,16 @@ void handleLedControl() {
     } else if (body.equalsIgnoreCase("OFF")) {
       digitalWrite(LED_PIN, HIGH);
       server.send(200, "text/plain", "LED turned OFF");
-    } else {
-      server.send(400, "text/plain", "Invalid command. Use 'ON' or 'OFF'.");
+    } 
+    // Turn on Relay Fan
+    else if (body.equalsIgnoreCase("FANON")) {
+      digitalWrite(relayFanPin, HIGH);
+      server.send(200, "text/plain", "Relay for Fan turned on");
+    }
+    // Turn off Relay Fan
+    else if (body.equalsIgnoreCase("FANOFF")) {
+      digitalWrite(relayFanPin, LOW);
+      server.send(200, "text/plain", "Relay for Fan turned off");
     }
   } else {
     server.send(405, "text/plain", "Use POST method only.");
@@ -77,7 +88,7 @@ void handleInformation() {
     server.send(
       200,
       "text/plain",
-      "temperature:" + String(isnan(temperature) ? 0 : temperature) + ";smoke:" + String(gasValue));
+      "temperature:" + String(isnan(temperature) ? 0 : temperature) + ";smoke:" + String(gasLevel));
 
     // if (Firebase.ready()) {
     //   if (Firebase.RTDB.setString(&fbdo, "/test/message", "Hello from ESP8266 (secure)!")) {
@@ -99,6 +110,10 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);  // off by default
+
+  // Relay Fan
+  pinMode(relayFanPin, OUTPUT);
+  digitalWrite(relayFanPin, LOW);
 
   // ====== WiFi Setup ======
   Serial.println();
