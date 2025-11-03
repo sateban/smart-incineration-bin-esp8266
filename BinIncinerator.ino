@@ -23,16 +23,24 @@ const int LED_PIN = LED_BUILTIN;  // D4 on NodeMCU
 int thermoSO = D6;   // SO pin
 int thermoCS = D5;   // CS pin
 int thermoSCK = D7;  // SCK pin
+int out = D8;
 double celsius;
 double fahrenheit;
 
 // Gas Sensor
-const int mq2Pin = D0;  // Analog pin connected to MQ-2
+const int mq2Pin = D3;  // Analog pin connected to MQ-2
 int gasLevel = 0;       // To store the sensor value
 int threshold = 400;    // Adjust this value based on your environment
 
 // Relay for Fan
+const int relayCoilPin = D0;
 const int relayFanPin = D1;
+
+// Timer
+bool startTimer = false;
+unsigned long previousMillis = 0;
+const long interval = 1000;  // 1 second interval
+int seconds = 0;
 
 MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
@@ -63,7 +71,12 @@ void handleLedControl() {
     } else if (body.equalsIgnoreCase("OFF")) {
       digitalWrite(LED_PIN, HIGH);
       server.send(200, "text/plain", "LED turned OFF");
-    } 
+    } else if (body.indexOf("timer") >= 0) {
+      body.replace("timer:", "");
+      seconds = body.toInt();
+      startTimer = true;
+      server.send(200, "text/plain", "Timer sent");
+    }
     // Turn on Relay Fan
     else if (body.equalsIgnoreCase("FANON")) {
       digitalWrite(relayFanPin, HIGH);
@@ -73,6 +86,11 @@ void handleLedControl() {
     else if (body.equalsIgnoreCase("FANOFF")) {
       digitalWrite(relayFanPin, LOW);
       server.send(200, "text/plain", "Relay for Fan turned off");
+    }
+    // Auto
+    else if (body.equalsIgnoreCase("AUTo")) {
+      // digitalWrite(relayFanPin, LOW);
+      server.send(200, "text/plain", "Auto");
     }
   } else {
     server.send(405, "text/plain", "Use POST method only.");
@@ -105,15 +123,32 @@ void handleInformation() {
   }
 }
 
+// ✅ Status
+void handleStatus() {
+  server.send(200, "text/plain", startTimer ? "running" : "done");
+}
 
 void setup() {
   Serial.begin(115200);
+
+  // Thermocouple
+  pinMode(out, OUTPUT);
+  digitalWrite(out, HIGH);
+
+  // Gas
+  pinMode(mqOut, OUTPUT);
+  digitalWrite(mqOut, HIGH);
+
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);  // off by default
 
   // Relay Fan
   pinMode(relayFanPin, OUTPUT);
   digitalWrite(relayFanPin, LOW);
+
+  // Relay Heating Coil
+  pinMode(relayCoilPin, OUTPUT);
+  digitalWrite(relayCoilPin, LOW);
 
   // ====== WiFi Setup ======
   Serial.println();
@@ -133,6 +168,7 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/led", handleLedControl);
   server.on("/info", handleInformation);
+  server.on("/status", HTTP_GET, handleStatus);
   server.begin();
   Serial.println("🌐 HTTP server started");
 
@@ -170,6 +206,24 @@ void loop() {
   server.handleClient();
   MDNS.update();  // Required to keep mDNS running
 
+  // Timer
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval && startTimer) {
+    previousMillis = currentMillis;  // reset timer
+
+    seconds--;
+    Serial.print("Timer: ");
+    Serial.print(seconds);
+    Serial.println(" seconds");
+
+    if (seconds <= 0) {
+      startTimer = false;
+      Serial.println("Time's up!");
+    }
+  }
+
+
   // Read temperature in Celsius
   celsius = thermocouple.readCelsius();
   // Read temperature in Fahrenheit
@@ -177,6 +231,6 @@ void loop() {
 
   // Read Gas Value
   gasLevel = analogRead(mq2Pin);
-  delay(1000);
+  delay(500);
   yield();
 }
