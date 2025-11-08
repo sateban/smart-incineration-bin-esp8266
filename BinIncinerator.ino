@@ -25,7 +25,8 @@ int thermoCS = D5;   // CS pin
 int thermoSCK = D7;  // SCK pin
 int out = D8;
 double celsius;
-double fahrenheit;
+bool useLocal = true;
+// double fahrenheit;
 
 // Gas Sensor
 const int mq2Pin = A0;  // Analog pin connected to MQ-2
@@ -92,6 +93,19 @@ void handleLedControl() {
       // digitalWrite(relayFanPin, LOW);
       server.send(200, "text/plain", "Auto");
     }
+    // Use Local Wifi / Firebase
+    else if (body.equalsIgnoreCase("CONNL")) {
+      // if (Firebase.RTDB.getBool(&fbdo, "/settings/connection/mode")) {
+      bool useLocal = true;
+      // } else {
+      //   Serial.print("❌ Failed to get value: ");
+      //   Serial.println(fbdo.errorReason());
+      // }
+      server.send(200, "text/plain", "LocalWifi");
+    } else if (body.equalsIgnoreCase("CONNF")) {
+      bool useLocal = false;
+      server.send(200, "text/plain", "Firebase");
+    }
   } else {
     server.send(405, "text/plain", "Use POST method only.");
   }
@@ -101,6 +115,7 @@ void handleInformation() {
   if (server.method() == HTTP_POST) {
     String body = server.arg("plain");
     body.trim();
+    bool isFirebase = body == "true";
     double temperature = celsius;
 
     server.send(
@@ -218,20 +233,63 @@ void loop() {
     Serial.println(" seconds");
     digitalWrite(relayCoilPin, HIGH);
 
+    if (!useLocal) {
+      if (Firebase.ready()) {
+        if (Firebase.RTDB.setString(&fbdo, "/stats/timer", String(seconds))) {
+          Serial.println("✅ Timer written successfully!");
+        }
+      }
+    }
+
     if (seconds <= 0) {
       startTimer = false;
       Serial.println("Time's up!");
+
+      if (!useLocal) {
+        if (Firebase.ready()) {
+          if (Firebase.RTDB.setString(&fbdo, "/stats/timer", "done")) {
+            Serial.println("✅ Timer done written successfully!");
+          }
+        }
+      }
+
       digitalWrite(relayCoilPin, LOW);
     }
   }
 
-  // Read temperature in Celsius
-  celsius = thermocouple.readCelsius();
-  // Read temperature in Fahrenheit
-  fahrenheit = thermocouple.readFahrenheit();
+  // --- SENSOR UPDATES EVERY 5 SECONDS ---
+  static unsigned long lastSensorUpdate = 0;
+  const unsigned long sensorInterval = 5000;  // 5s interval for Firebase writes
 
-  // Read Gas Value
-  gasLevel = analogRead(mq2Pin);
-  delay(500);
+  if (currentMillis - lastSensorUpdate >= sensorInterval) {
+    lastSensorUpdate = currentMillis;
+
+    float newCelsius = thermocouple.readCelsius();
+    int newGasLevel = analogRead(mq2Pin);
+
+    // Only write if values changed significantly
+    // if (abs(newCelsius - celsius) >= 0.5) {  // 0.5°C threshold
+    celsius = newCelsius;
+
+    if (!useLocal) {
+      if (Firebase.ready()) {
+        Firebase.RTDB.setString(&fbdo, "/stats/temperature", String(celsius));
+        Serial.println("✅ Temperature updated");
+      }
+    }
+    // }
+
+    // if (abs(newGasLevel - gasLevel) >= 10) {  // 10 ADC threshold
+    gasLevel = newGasLevel;
+    if (!useLocal) {
+      if (Firebase.ready()) {
+        Firebase.RTDB.setString(&fbdo, "/stats/gas", String(gasLevel));
+        Serial.println("✅ Gas level updated");
+      }
+    }
+    // }
+  }
+
+  // Avoid delay() — use yield() to keep background tasks alive
   yield();
 }
