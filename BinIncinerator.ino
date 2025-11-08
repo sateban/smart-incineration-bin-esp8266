@@ -17,7 +17,7 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 // ======== LED PIN ========
-const int LED_PIN = LED_BUILTIN;  // D4 on NodeMCU
+// const int LED_PIN = LED_BUILTIN;  // D4 on NodeMCU
 
 // Thermocouple
 int thermoSO = D6;   // SO pin
@@ -28,7 +28,7 @@ double celsius;
 double fahrenheit;
 
 // Gas Sensor
-const int mq2Pin = D3;  // Analog pin connected to MQ-2
+const int mq2Pin = A0;  // Analog pin connected to MQ-2
 int gasLevel = 0;       // To store the sensor value
 int threshold = 400;    // Adjust this value based on your environment
 
@@ -55,7 +55,7 @@ void handleLedControl() {
     body.trim();
 
     if (body.equalsIgnoreCase("ON")) {
-      digitalWrite(LED_PIN, LOW);  // Active LOW
+      // digitalWrite(LED_PIN, LOW);  // Active LOW
       server.send(200, "text/plain", "LED turned ON");
 
       if (Firebase.ready()) {
@@ -69,7 +69,7 @@ void handleLedControl() {
       }
 
     } else if (body.equalsIgnoreCase("OFF")) {
-      digitalWrite(LED_PIN, HIGH);
+      // digitalWrite(LED_PIN, HIGH);
       server.send(200, "text/plain", "LED turned OFF");
     } else if (body.indexOf("timer") >= 0) {
       body.replace("timer:", "");
@@ -79,12 +79,12 @@ void handleLedControl() {
     }
     // Turn on Relay Fan
     else if (body.equalsIgnoreCase("FANON")) {
-      digitalWrite(relayFanPin, HIGH);
+      digitalWrite(relayFanPin, LOW);
       server.send(200, "text/plain", "Relay for Fan turned on");
     }
     // Turn off Relay Fan
     else if (body.equalsIgnoreCase("FANOFF")) {
-      digitalWrite(relayFanPin, LOW);
+      digitalWrite(relayFanPin, HIGH);
       server.send(200, "text/plain", "Relay for Fan turned off");
     }
     // Auto
@@ -136,19 +136,19 @@ void setup() {
   digitalWrite(out, HIGH);
 
   // Gas
-  pinMode(mqOut, OUTPUT);
-  digitalWrite(mqOut, HIGH);
+  // pinMode(mqOut, OUTPUT);
+  // digitalWrite(mqOut, HIGH);
 
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);  // off by default
+  // pinMode(LED_PIN, OUTPUT);
+  // digitalWrite(LED_PIN, HIGH);  // off by default
 
   // Relay Fan
   pinMode(relayFanPin, OUTPUT);
-  digitalWrite(relayFanPin, LOW);
+  digitalWrite(relayFanPin, HIGH);
 
   // Relay Heating Coil
   pinMode(relayCoilPin, OUTPUT);
-  digitalWrite(relayCoilPin, LOW);
+  digitalWrite(relayCoilPin, HIGH);
 
   // ====== WiFi Setup ======
   Serial.println();
@@ -216,13 +216,14 @@ void loop() {
     Serial.print("Timer: ");
     Serial.print(seconds);
     Serial.println(" seconds");
+    digitalWrite(relayCoilPin, HIGH);
 
     if (seconds <= 0) {
       startTimer = false;
       Serial.println("Time's up!");
+      digitalWrite(relayCoilPin, LOW);
     }
   }
-
 
   // Read temperature in Celsius
   celsius = thermocouple.readCelsius();
