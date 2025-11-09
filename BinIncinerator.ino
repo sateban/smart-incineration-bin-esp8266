@@ -34,14 +34,17 @@ int gasLevel = 0;       // To store the sensor value
 int threshold = 400;    // Adjust this value based on your environment
 
 // Relay for Fan
-const int relayCoilPin = D0;
-const int relayFanPin = D1;
+const int relayCoilPin = D1;
+const int relayFanPin = D0;
+bool fanStarted = true;
 
 // Timer
-bool startTimer = false;
+String startTimer = "";
 unsigned long previousMillis = 0;
+unsigned long previousMillis2 = 0;
 const long interval = 1000;  // 1 second interval
 int seconds = 0;
+int seconds2 = 30;
 
 MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
@@ -50,6 +53,7 @@ void handleRoot() {
   server.send(200, "text/plain", "Send POST to /led with body 'ON' or 'OFF'");
 }
 
+// led
 void handleLedControl() {
   if (server.method() == HTTP_POST) {
     String body = server.arg("plain");
@@ -60,11 +64,12 @@ void handleLedControl() {
       server.send(200, "text/plain", "LED turned ON");
 
       if (Firebase.ready()) {
-        if (Firebase.RTDB.setString(&fbdo, "/test/message", "Hello from ESP8266 (secure)!")) {
+        if (Firebase.RTDB.setString(&fbdo, "/settings/message/value", "Hello from ESP8266 (secure)!")) {
           Serial.println("✅ Data written successfully!");
-        } else {
-          Serial.println("❌ Write failed: " + fbdo.errorReason());
-        }
+        } 
+        if (Firebase.RTDB.setTimestamp(&fbdo, "/settings/message")) {
+          Serial.println("✅ Data written successfully!");
+        } 
       } else {
         Serial.println("⚠️ Firebase not ready yet.");
       }
@@ -75,17 +80,18 @@ void handleLedControl() {
     } else if (body.indexOf("timer") >= 0) {
       body.replace("timer:", "");
       seconds = body.toInt();
-      startTimer = true;
+      startTimer = "running";
       server.send(200, "text/plain", "Timer sent");
     }
     // Turn on Relay Fan
     else if (body.equalsIgnoreCase("FANON")) {
       digitalWrite(relayFanPin, LOW);
+      fanStarted = true;
       server.send(200, "text/plain", "Relay for Fan turned on");
     }
     // Turn off Relay Fan
     else if (body.equalsIgnoreCase("FANOFF")) {
-      digitalWrite(relayFanPin, HIGH);
+      // digitalWrite(relayFanPin, HIGH);
       server.send(200, "text/plain", "Relay for Fan turned off");
     }
     // Auto
@@ -138,9 +144,9 @@ void handleInformation() {
   }
 }
 
-// ✅ Status
-void handleStatus() {
-  server.send(200, "text/plain", startTimer ? "running" : "done");
+// ✅ /status
+void handleStatus() { 
+  server.send(200, "text/plain", startTimer);
 }
 
 void setup() {
@@ -224,7 +230,7 @@ void loop() {
   // Timer
   unsigned long currentMillis = millis();
 
-  if (currentMillis - previousMillis >= interval && startTimer) {
+  if (currentMillis - previousMillis >= interval && startTimer == "running") {
     previousMillis = currentMillis;  // reset timer
 
     seconds--;
@@ -232,6 +238,7 @@ void loop() {
     Serial.print(seconds);
     Serial.println(" seconds");
     digitalWrite(relayCoilPin, HIGH);
+    digitalWrite(relayFanPin, HIGH);
 
     if (!useLocal) {
       if (Firebase.ready()) {
@@ -242,7 +249,7 @@ void loop() {
     }
 
     if (seconds <= 0) {
-      startTimer = false;
+      startTimer = "done";
       Serial.println("Time's up!");
 
       if (!useLocal) {
@@ -254,8 +261,45 @@ void loop() {
       }
 
       digitalWrite(relayCoilPin, LOW);
+      digitalWrite(relayFanPin, LOW);
     }
   }
+
+  // For Fan
+  // if (currentMillis - previousMillis2 >= interval && fanStarted) {
+  //   previousMillis2 = currentMillis;  // reset timer
+
+  //   seconds2--;
+  //   Serial.print("Fan Timer: ");
+  //   Serial.print(seconds2);
+  //   Serial.println(" seconds");
+  //   // digitalWrite(relayCoilPin, HIGH);
+
+  //   if (!useLocal) {
+  //     if (Firebase.ready()) {
+  //       if (Firebase.RTDB.setString(&fbdo, "/stats/fanTimer", String(seconds))) {
+  //         Serial.println("✅ Timer written successfully!");
+  //       }
+  //     }
+  //   }
+
+  //   if (seconds2 <= 0) {
+  //     startTimer = "DONEPURIFICATION";
+  //     Serial.println("Time's up!");
+
+  //     if (!useLocal) {
+  //       if (Firebase.ready()) {
+  //         if (Firebase.RTDB.setString(&fbdo, "/stats/fanTimer", "done")) {
+  //           Serial.println("✅ Timer done written successfully!");
+  //         }
+  //       }
+  //     }
+
+  //     digitalWrite(relayFanPin, HIGH);
+
+  //     fanStarted = false;
+  //   }
+  // }
 
   // --- SENSOR UPDATES EVERY 5 SECONDS ---
   static unsigned long lastSensorUpdate = 0;
