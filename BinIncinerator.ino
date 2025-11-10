@@ -48,6 +48,30 @@ int seconds2 = 30;
 
 MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
+// Firebase Stream
+void streamCallback(FirebaseStream data) {
+  Serial.println("🔥 Stream Data Received");
+
+  if (data.dataType() == "string") {
+    Serial.print("Value: ");
+    Serial.println(data.stringData());
+  }
+
+  if (data.dataType() == "int") {
+    Serial.print("Value: ");
+    Serial.println(data.intData());
+  }
+
+  // Add your custom action here
+  // Example:
+  // digitalWrite(relayFanPin, data.intData() == 1 ? LOW : HIGH);
+}
+
+void streamTimeout(bool timeout) {
+  if (timeout)
+    Serial.println("⚠️ Stream timed out, reconnecting...");
+}
+
 // ======== HANDLERS ========
 void handleRoot() {
   server.send(200, "text/plain", "Send POST to /led with body 'ON' or 'OFF'");
@@ -66,10 +90,10 @@ void handleLedControl() {
       if (Firebase.ready()) {
         if (Firebase.RTDB.setString(&fbdo, "/settings/message/value", "Hello from ESP8266 (secure)!")) {
           Serial.println("✅ Data written successfully!");
-        } 
+        }
         if (Firebase.RTDB.setTimestamp(&fbdo, "/settings/message")) {
           Serial.println("✅ Data written successfully!");
-        } 
+        }
       } else {
         Serial.println("⚠️ Firebase not ready yet.");
       }
@@ -145,7 +169,7 @@ void handleInformation() {
 }
 
 // ✅ /status
-void handleStatus() { 
+void handleStatus() {
   server.send(200, "text/plain", startTimer);
 }
 
@@ -208,6 +232,16 @@ void setup() {
 
   Serial.println("🔥 Firebase initialized");
 
+  if (Firebase.RTDB.getBool(&fbdo, "/settings/connection/mode")) {
+    useLocal = !fbdo.boolData();
+  }
+
+  if (!Firebase.RTDB.beginStream(&fbdo, "/settings/stats/gas")) {
+    Serial.println("❌ Cannot start stream: " + fbdo.errorReason());
+  }
+
+  Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeout);
+
   // Start mDNS responder with device name "esp8266-device"
   if (MDNS.begin("esp8266-device")) {
     Serial.println("mDNS responder started");
@@ -262,6 +296,23 @@ void loop() {
 
       digitalWrite(relayCoilPin, LOW);
       digitalWrite(relayFanPin, LOW);
+    }
+  }
+
+  if (Firebase.RTDB.readStream(&fbdo)) {
+    if (fbdo.streamAvailable()) {
+      Serial.println("🔥 Value changed!");
+
+      Serial.print("Data path: ");
+      Serial.println(fbdo.dataPath());
+
+      Serial.print("Data type: ");
+      Serial.println(fbdo.dataType());
+
+      if (fbdo.dataType() == "string") {
+        Serial.print("Value: ");
+        Serial.println(fbdo.stringData());
+      }
     }
   }
 
