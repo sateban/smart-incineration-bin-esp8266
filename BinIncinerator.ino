@@ -1,20 +1,20 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <Firebase_ESP_Client.h>
+// #include <Firebase_ESP_Client.h>
 #include <ESP8266mDNS.h>
 #include "secrets.h"
 #include "max6675.h"
 
 // Provide token process info
-#include "addons/TokenHelper.h"
-#include "addons/RTDBHelper.h"
+// #include "addons/TokenHelper.h"
+// #include "addons/RTDBHelper.h"
 
 // ======== SERVER SETUP ========
 ESP8266WebServer server(80);
 
-FirebaseData fbdo;
-FirebaseAuth auth;
-FirebaseConfig config;
+// FirebaseData fbdo;
+// FirebaseAuth auth;
+// FirebaseConfig config;
 
 // ======== LED PIN ========
 // const int LED_PIN = LED_BUILTIN;  // D4 on NodeMCU
@@ -49,23 +49,23 @@ int seconds2 = 30;
 MAX6675 thermocouple(thermoSCK, thermoCS, thermoSO);
 
 // Firebase Stream
-void streamCallback(FirebaseStream data) {
-  Serial.println("🔥 Stream Data Received");
+// void streamCallback(FirebaseStream data) {
+//   Serial.println("🔥 Stream Data Received");
 
-  if (data.dataType() == "string") {
-    Serial.print("Value: ");
-    Serial.println(data.stringData());
-  }
+//   if (data.dataType() == "string") {
+//     Serial.print("Value: ");
+//     Serial.println(data.stringData());
+//   }
 
-  if (data.dataType() == "int") {
-    Serial.print("Value: ");
-    Serial.println(data.intData());
-  }
+//   if (data.dataType() == "int") {
+//     Serial.print("Value: ");
+//     Serial.println(data.intData());
+//   }
 
-  // Add your custom action here
-  // Example:
-  // digitalWrite(relayFanPin, data.intData() == 1 ? LOW : HIGH);
-}
+//   // Add your custom action here
+//   // Example:
+//   // digitalWrite(relayFanPin, data.intData() == 1 ? LOW : HIGH);
+// }
 
 void streamTimeout(bool timeout) {
   if (timeout)
@@ -87,16 +87,16 @@ void handleLedControl() {
       // digitalWrite(LED_PIN, LOW);  // Active LOW
       server.send(200, "text/plain", "LED turned ON");
 
-      if (Firebase.ready()) {
-        if (Firebase.RTDB.setString(&fbdo, "/settings/message/value", "Hello from ESP8266 (secure)!")) {
-          Serial.println("✅ Data written successfully!");
-        }
-        if (Firebase.RTDB.setTimestamp(&fbdo, "/settings/message")) {
-          Serial.println("✅ Data written successfully!");
-        }
-      } else {
-        Serial.println("⚠️ Firebase not ready yet.");
-      }
+      // if (Firebase.ready()) {
+      //   if (Firebase.RTDB.setString(&fbdo, "/settings/message/value", "Hello from ESP8266 (secure)!")) {
+      //     Serial.println("✅ Data written successfully!");
+      //   }
+      //   if (Firebase.RTDB.setTimestamp(&fbdo, "/settings/message")) {
+      //     Serial.println("✅ Data written successfully!");
+      //   }
+      // } else {
+      //   Serial.println("⚠️ Firebase not ready yet.");
+      // }
 
     } else if (body.equalsIgnoreCase("OFF")) {
       // digitalWrite(LED_PIN, HIGH);
@@ -145,7 +145,7 @@ void handleInformation() {
   if (server.method() == HTTP_POST) {
     String body = server.arg("plain");
     body.trim();
-    bool isFirebase = body == "true";
+    // bool isFirebase = body == "true";
     double temperature = celsius;
 
     server.send(
@@ -218,29 +218,29 @@ void setup() {
   Serial.println("🌐 HTTP server started");
 
   // ====== Firebase Setup ======
-  config.api_key = API_KEY;
-  config.database_url = DATABASE_URL;
+  // config.api_key = API_KEY;
+  // config.database_url = DATABASE_URL;
 
-  auth.user.email = USER_EMAIL;
-  auth.user.password = USER_PASSWORD;
+  // auth.user.email = USER_EMAIL;
+  // auth.user.password = USER_PASSWORD;
 
-  config.token_status_callback = tokenStatusCallback;  // must be set BEFORE begin()
-  Firebase.reconnectWiFi(true);
-  fbdo.setResponseSize(4096);
+  // config.token_status_callback = tokenStatusCallback;  // must be set BEFORE begin()
+  // Firebase.reconnectWiFi(true);
+  // fbdo.setResponseSize(4096);
 
-  Firebase.begin(&config, &auth);  // initialize after all setup
+  // Firebase.begin(&config, &auth);  // initialize after all setup
 
-  Serial.println("🔥 Firebase initialized");
+  // Serial.println("🔥 Firebase initialized");
 
-  if (Firebase.RTDB.getBool(&fbdo, "/settings/connection/mode")) {
-    useLocal = !fbdo.boolData();
-  }
+  // if (Firebase.RTDB.getBool(&fbdo, "/settings/connection/mode")) {
+  //   useLocal = !fbdo.boolData();
+  // }
 
-  if (!Firebase.RTDB.beginStream(&fbdo, "/settings/stats/gas")) {
-    Serial.println("❌ Cannot start stream: " + fbdo.errorReason());
-  }
+  // if (!Firebase.RTDB.beginStream(&fbdo, "/settings/stats/gas")) {
+  //   Serial.println("❌ Cannot start stream: " + fbdo.errorReason());
+  // }
 
-  Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeout);
+  // Firebase.RTDB.setStreamCallback(&fbdo, streamCallback, streamTimeout);
 
   // Start mDNS responder with device name "esp8266-device"
   if (MDNS.begin("esp8266-device")) {
@@ -274,47 +274,47 @@ void loop() {
     digitalWrite(relayCoilPin, HIGH);
     digitalWrite(relayFanPin, HIGH);
 
-    if (!useLocal) {
-      if (Firebase.ready()) {
-        if (Firebase.RTDB.setString(&fbdo, "/stats/timer", String(seconds))) {
-          Serial.println("✅ Timer written successfully!");
-        }
-      }
-    }
+    // if (!useLocal) {
+    //   if (Firebase.ready()) {
+    //     if (Firebase.RTDB.setString(&fbdo, "/stats/timer", String(seconds))) {
+    //       Serial.println("✅ Timer written successfully!");
+    //     }
+    //   }
+    // }
 
     if (seconds <= 0) {
       startTimer = "done";
       Serial.println("Time's up!");
 
-      if (!useLocal) {
-        if (Firebase.ready()) {
-          if (Firebase.RTDB.setString(&fbdo, "/stats/timer", "done")) {
-            Serial.println("✅ Timer done written successfully!");
-          }
-        }
-      }
+      // if (!useLocal) {
+      //   if (Firebase.ready()) {
+      //     if (Firebase.RTDB.setString(&fbdo, "/stats/timer", "done")) {
+      //       Serial.println("✅ Timer done written successfully!");
+      //     }
+      //   }
+      // }
 
       digitalWrite(relayCoilPin, LOW);
       digitalWrite(relayFanPin, LOW);
     }
   }
 
-  if (Firebase.RTDB.readStream(&fbdo)) {
-    if (fbdo.streamAvailable()) {
-      Serial.println("🔥 Value changed!");
+  // if (Firebase.RTDB.readStream(&fbdo)) {
+  //   if (fbdo.streamAvailable()) {
+  //     Serial.println("🔥 Value changed!");
 
-      Serial.print("Data path: ");
-      Serial.println(fbdo.dataPath());
+  //     Serial.print("Data path: ");
+  //     Serial.println(fbdo.dataPath());
 
-      Serial.print("Data type: ");
-      Serial.println(fbdo.dataType());
+  //     Serial.print("Data type: ");
+  //     Serial.println(fbdo.dataType());
 
-      if (fbdo.dataType() == "string") {
-        Serial.print("Value: ");
-        Serial.println(fbdo.stringData());
-      }
-    }
-  }
+  //     if (fbdo.dataType() == "string") {
+  //       Serial.print("Value: ");
+  //       Serial.println(fbdo.stringData());
+  //     }
+  //   }
+  // }
 
   // For Fan
   // if (currentMillis - previousMillis2 >= interval && fanStarted) {
@@ -366,22 +366,22 @@ void loop() {
     // if (abs(newCelsius - celsius) >= 0.5) {  // 0.5°C threshold
     celsius = newCelsius;
 
-    if (!useLocal) {
-      if (Firebase.ready()) {
-        Firebase.RTDB.setString(&fbdo, "/stats/temperature", String(celsius));
-        Serial.println("✅ Temperature updated");
-      }
-    }
+    // if (!useLocal) {
+    //   if (Firebase.ready()) {
+    //     Firebase.RTDB.setString(&fbdo, "/stats/temperature", String(celsius));
+    //     Serial.println("✅ Temperature updated");
+    //   }
+    // }
     // }
 
     // if (abs(newGasLevel - gasLevel) >= 10) {  // 10 ADC threshold
     gasLevel = newGasLevel;
-    if (!useLocal) {
-      if (Firebase.ready()) {
-        Firebase.RTDB.setString(&fbdo, "/stats/gas", String(gasLevel));
-        Serial.println("✅ Gas level updated");
-      }
-    }
+    // if (!useLocal) {
+    //   if (Firebase.ready()) {
+    //     Firebase.RTDB.setString(&fbdo, "/stats/gas", String(gasLevel));
+    //     Serial.println("✅ Gas level updated");
+    //   }
+    // }
     // }
   }
 
